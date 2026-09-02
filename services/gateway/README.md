@@ -51,7 +51,7 @@ http://localhost:8080/v3/api-docs
 | `AUTH_URL` | `http://localhost:8083` | URL Authorization Service для health-check. |
 | `CARD_MGMT_URL` | `http://localhost:8081` | URL Card Management Service. |
 | `TERMINAL_SIM_URL` | `http://localhost:8085` | URL Terminal Simulator. |
-| `MERCHANT_SIM_URL` | `http://localhost:8086` | URL Merchant Simulator. |
+| `MERCHANT_SIM_URL` | `http://localhost:8084` | URL Merchant Simulator. |
 | `TRANSACTIONS_RATE_LIMIT_CAPACITY` | `100` | Размер token bucket для транзакционных запросов на клиента. |
 | `TRANSACTIONS_RATE_LIMIT_REFILL_PER_SECOND` | `100` | Скорость пополнения token bucket в токенах в секунду. |
 | `TRANSACTIONS_RATE_LIMIT_BUCKET_TTL` | `10m` | Время жизни неактивного rate-limit bucket. |
@@ -126,7 +126,7 @@ docker run --rm -p 8080:8080 \
   -e AUTH_URL=http://host.docker.internal:8083 \
   -e CARD_MGMT_URL=http://host.docker.internal:8081 \
   -e TERMINAL_SIM_URL=http://host.docker.internal:8085 \
-  -e MERCHANT_SIM_URL=http://host.docker.internal:8086 \
+  -e MERCHANT_SIM_URL=http://host.docker.internal:8084 \
   processing-gateway
 ```
 

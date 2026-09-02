@@ -6,7 +6,7 @@
 graph TB
     subgraph "Эмуляторы внешних систем"
         TERM["Terminal Simulator<br/>POS-терминал<br/>Порт: 8085"]
-        MERCH["Merchant + Acquirer<br/>Simulator<br/>Порт: 8086"]
+        MERCH["Merchant + Acquirer<br/>Simulator<br/>Порт: 8084"]
     end
 
     subgraph "API Gateway"
@@ -198,7 +198,7 @@ sequenceDiagram
 | Switch | 8082 |
 | Authorization | 8083 |
 | Terminal Simulator | 8085 |
-| Merchant Simulator | 8086 |
+| Merchant Simulator | 8084 |
 | Transaction Logger | 8088 |
 | Bin Lookup | 8096 |
 | Notification Service | 8097 |

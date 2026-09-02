@@ -27,7 +27,7 @@
   - Switch (8082)
   - Authorization (8083)
   - Terminal Simulator (8085)
-  - Merchant + Acquirer Simulator (8086)
+  - Merchant + Acquirer Simulator (8084)
   - Transaction Logger (8088)
   - Web Dashboard (3000)
 - Поднимать инфраструктурный сервис:

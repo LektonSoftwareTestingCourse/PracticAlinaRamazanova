@@ -90,7 +90,7 @@ spring:
         predicates:
           - Path=/api/simulator/terminal/**
       - id: merchant
-        uri: ${MERCHANT_SIM_URL:http://localhost:8086}
+        uri: ${MERCHANT_SIM_URL:http://localhost:8084}
         metadata:
           serviceName: merchantSimulator
         predicates:
@@ -130,7 +130,7 @@ spring:
           - RewritePath=/terminal-docs, /v3/api-docs
           - OpenApi
       - id: merchant-docs
-        uri: ${MERCHANT_SIM_URL:http://localhost:8086}
+        uri: ${MERCHANT_SIM_URL:http://localhost:8084}
         predicates:
           - Path=/merchant-docs
           - Method=GET

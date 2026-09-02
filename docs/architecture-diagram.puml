@@ -15,7 +15,7 @@ skinparam packageBackgroundColor #F8F8F8
 ' --- Эмуляторы внешних систем ---
 package "Эмуляторы внешних систем" as Simulators #E3F2FD {
     [Terminal Simulator\nPOS-терминал\n:8085] as TERM #BBDEFB
-    [Merchant + Acquirer\nSimulator\n:8086] as MERCH #BBDEFB
+    [Merchant + Acquirer\nSimulator\n:8084] as MERCH #BBDEFB
 }
 
 ' --- API Gateway ---

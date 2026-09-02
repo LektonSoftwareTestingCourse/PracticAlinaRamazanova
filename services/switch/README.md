@@ -96,7 +96,7 @@ Switch отправляет `com.processing.common.dto.transactionlogger.Transac
 | `PORT` / `SERVER_PORT` | `8082` / `8080` (Docker) | Порт сервиса |
 | `AUTH_URL` | `http://localhost:8083` | URL Authorization Service |
 | `LOGGER_URL` | `http://localhost:8088` | URL Transaction Logger |
-| `MERCHANT_URL` | `http://localhost:8086` | URL Merchant Acquirer (комиссия) |
+| `MERCHANT_URL` | `http://localhost:8084` | URL Merchant Acquirer (комиссия) |
 
 Параметры в `application.yml`:
 
