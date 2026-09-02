@@ -254,6 +254,7 @@ services:
       start_period: 40s
 
   autoscaler:
+    profiles: ["observability"]
     image: docker:27-cli
     environment:
       - GHCR_USER
@@ -365,6 +366,7 @@ services:
       start_period: 10s
 
   prometheus:
+    profiles: ["observability"]
     image: prom/prometheus:v2.55.1
     container_name: smp-prometheus
     restart: unless-stopped
@@ -378,6 +380,7 @@ services:
       - smp-network
 
   grafana:
+    profiles: ["observability"]
     image: grafana/grafana:11.3.0
     user: "472:472"
     container_name: smp-grafana
@@ -396,6 +399,7 @@ services:
       - smp-network
 
   loki:
+    profiles: ["observability"]
     image: grafana/loki:3.3.2
     container_name: smp-loki
     restart: unless-stopped
@@ -408,6 +412,7 @@ services:
       - smp-network
 
   promtail:
+    profiles: ["observability"]
     image: grafana/promtail:3.3.2
     container_name: smp-promtail
     restart: unless-stopped
