@@ -8,16 +8,6 @@ on:
   push:
     branches:
     - '**'
-    paths:
-    - 'services/**'
-    - '.github/workflows/ci.yml'
-    - 'docker-compose.yaml'
-    - '.env.example'
-    - 'docs/api/**'
-    - 'scripts/smoke-test.sh'
-    - 'scripts/smoke-test.ps1'
-    - 'scripts/load-smoke.sh'
-    - 'tz/**'
   pull_request:
     branches: [ main ]
     paths:
