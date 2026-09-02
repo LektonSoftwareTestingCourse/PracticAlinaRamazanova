@@ -1,219 +1,100 @@
 # Чек-листы само-приёмки — СМП
 
+> **Как использовать:** перед сдачей каждого артефакта пройдите соответствующий чек-лист. Отмечайте пройденные пункты `[x]`. Если что-то не работает — чините до сдачи. Куратор проверяет только красные пункты.
 >
-> **Как использовать:** перед каждым ревью куратора (дни 5, 10, 15) каждая группа самостоятельно проходит чек-лист. Отмечайте пройденные пункты `[x]`. Если что-то не работает — чините до ревью. Куратор проверяет только красные пункты.
+> Чек-листы переформулированы по модели «тестируем готовую систему»: СМП уже реализован (11 сервисов + PostgreSQL + RabbitMQ), вы проверяете его поведение, а не разрабатываете.
 
 ---
 
-## Ревью №1 — День 5 (Фундамент)
+## Артефакт 1 — Запуск СМП + smoke-тесты
 
-### Все сервисы (общее)
+Этот чек-лист идентичен чек-листу практики 1 и сверен со [`scripts/smoke-test.sh`](../scripts/smoke-test.sh).
 
-- [ ] `docker compose up -d` поднимает все 8 сервисов без ошибок
-- [ ] `curl http://localhost:{port}/health` каждого сервиса возвращает HTTP 200
-- [ ] Все переменные окружения вынесены в `.env` (ни одного хардкода хостов/портов)
-- [ ] Dockerfile собирается: `docker build -t {service} .`
-- [ ] Swagger UI / OpenAPI docs доступны на `http://localhost:{port}/docs`
-- [ ] Код проходит линтер:
-  - Java: `mvn checkstyle:check`
-  - Go: `golangci-lint run` или `go vet ./...`
-  - Python: `flake8 --max-line-length=120`
-  - TypeScript: `npm run lint`
-- [ ] README.md сервиса заполнен (см. [шаблон](readme-template.md))
-
-### DevOps
-
-- [ ] `docker-compose.yml` содержит все 8 сервисов + PostgreSQL
-- [ ] Настроена общая сеть (все сервисы видят друг друга по DNS-именам)
-- [ ] `.env` файл со всеми переменными окружения
-- [ ] `.github/workflows/ci.yml` настроен: линтер, сборка, тесты
-- [ ] Структура репозитория соответствует общему README
-- [ ] OpenAPI-спецификация собрана и зафиксирована
-
-### Gateway
-
-- [ ] `GET /health` возвращает статус Gateway и всех downstream-сервисов
-- [ ] `POST /api/transactions` принимает запрос, валидирует и возвращает ответ
-- [ ] Валидация: все обязательные поля проверяются (pan=16 цифр, amount>0 и т.д.)
-- [ ] Rate limiting: не более 100 запросов/сек на `/api/transactions`
-
-### Switch
-
-- [ ] `GET /health` возвращает статус Switch и Authorization
-- [ ] `POST /api/internal/route` принимает запрос, извлекает BIN, определяет issuerId
-- [ ] Таблица BIN → issuerId содержит 5 записей
-
-### Authorization
-
-- [ ] `GET /health` возвращает статус Authorization и Card Management
-- [ ] `POST /api/internal/authorize` принимает запрос (пока может возвращать всегда APPROVED)
-
-### Card Management
-
-- [ ] `POST /api/cards/generate` генерирует 100+ карт с 5 BIN
-- [ ] `GET /api/cards/{pan}` возвращает карту по PAN
-- [ ] `GET /api/cards` возвращает список карт с пагинацией
-- [ ] PAN проходит проверку алгоритмом Луна
-- [ ] Карты хранятся в PostgreSQL (таблица `cards`)
-
-### Terminal Simulator
-
-- [ ] `GET /health` работает
-- [ ] `POST /api/simulator/terminal/run` с `{count: 1, scenario: "normal"}` отправляет 1 транзакцию в Gateway
-
-### Merchant + Acquirer Simulator
-
-- [ ] `GET /health` работает
-- [ ] Список из 20+ мерчантов с MCC-кодами загружен
-- [ ] `POST /api/simulator/merchant/run` с `{count: 1}` отправляет 1 транзакцию в Gateway
-
-### Transaction Logger
-
-- [ ] `GET /health` работает
-- [ ] `POST /api/internal/log` принимает транзакцию и сохраняет в PostgreSQL
-
-### Web Dashboard
-
-- [ ] `GET /health` (или доступность на порту 3000)
-- [ ] Каркас React-приложения запускается
-- [ ] KPI-карточки отображаются (пока с хардкод-данными)
+- [ ] `docker compose up -d` поднимает все 11 сервисов + PostgreSQL + RabbitMQ без ошибок
+- [ ] `docker compose ps` — все контейнеры `Up` (healthy)
+- [ ] Health-check Gateway: `curl http://localhost:8080/health` → 200
+- [ ] Health-check Card Management: `curl http://localhost:8081/health` → 200
+- [ ] Health-check Switch: `curl http://localhost:8082/health` → 200
+- [ ] Health-check Authorization: `curl http://localhost:8083/health` → 200
+- [ ] Health-check Terminal Simulator: `curl http://localhost:8085/health` → 200
+- [ ] Health-check Merchant Simulator: `curl http://localhost:8084/health` → 200
+- [ ] Health-check Transaction Logger: `curl http://localhost:8088/health` → 200
+- [ ] Health-check Bin Lookup: `curl http://localhost:8096/actuator/health` → 200
+- [ ] Health-check Notification Service: `curl http://localhost:8097/actuator/health` → 200
+- [ ] RabbitMQ Management UI доступен: `http://localhost:15672` (логин `smp`, пароль `smp`)
+- [ ] Web Dashboard доступен: `http://localhost:3000`
+- [ ] `./scripts/smoke-test.sh` завершается `🎉 ALL CHECKS PASSED`
+- [ ] Генерация карт: `POST /api/cards/generate` отрабатывает (≥ 20 карт)
+- [ ] Симулятор терминалов: `POST /api/simulator/terminal/run` отправляет транзакции (50 submitted)
 
 ---
 
-## Ревью №2 — День 10 (Сквозной прогон)
+## Артефакт 2 — Тест-дизайн и баг-репорты
 
-### Все сервисы
-
-- [ ] `scripts/smoke-test.sh` (или `.ps1`) проходит без ошибок
-- [ ] CI/CD зелёный (линтер + сборка + unit-тесты)
-- [ ] Unit-тестов: минимум 1 на сервис
-
-### Gateway
-
-- [ ] `POST /api/transactions` → Switch → Authorization → CMS → Logger — полный цикл до ответа
-- [ ] Проксирование работает: `/api/cards/**`, `/api/transactions/search`, `/api/dashboard/**`
-- [ ] HTTP 503 при недоступности downstream-сервиса
-
-### Switch
-
-- [ ] Маршрутизация по BIN: 5 BIN → 5 разных issuerId
-- [ ] Вызов Authorization Service — реальный, не заглушка
-- [ ] Синхронная отправка транзакции в Logger (`POST /api/internal/log`)
-- [ ] Неизвестный BIN → DECLINED, responseCode="14"
-- [ ] Logger недоступен → транзакция не блокируется (graceful degradation)
-
-### Authorization
-
-- [ ] Проверка статуса карты (ACTIVE/INACTIVE/BLOCKED/EXPIRED)
-- [ ] Проверка дневного лимита
-- [ ] Проверка месячного лимита
-- [ ] Проверка доступного баланса
-- [ ] Резервирование средств через CMS при APPROVED
-- [ ] Генерация RRN (12 цифр) и authCode (6 символов)
-- [ ] Все decline-сценарии: 14, 54, 61, 51, 05
-
-### Card Management
-
-- [ ] CRUD + PATCH: create, read, update (PATCH), delete (мягкое: status=DELETED)
-- [ ] `GET /api/cards` — список с пагинацией и фильтрацией по статусу/BIN
-- [ ] `POST /api/cards/{pan}/reserve` — списание средств
-- [ ] 100+ карт сгенерированы с разными статусами (ACTIVE 95%, INACTIVE 3%, BLOCKED 2%)
-
-### Terminal Simulator
-
-- [ ] Сценарий `normal`: 50 транзакций, все ACTIVE-карты, MCC=5411
-- [ ] Сценарий `mixed`: 70/15/10/5 распределение
-- [ ] Сценарий `declines_test`: все 5 категорий (несуществующий PAN, BLOCKED, недостаточно средств, лимит, нормальные)
-
-### Merchant + Acquirer Simulator
-
-- [ ] Сценарий `grocery`: 50 транзакций, MCC=5411
-- [ ] Сценарий `restaurant`: 50 транзакций, MCC=5812/5814
-- [ ] Расчёт комиссии эквайрера для каждой транзакции
-
-### Transaction Logger
-
-- [ ] `POST /api/internal/log` — транзакция сохраняется в БД
-- [ ] `GET /api/transactions/search` — поиск с фильтрацией (pan, status, dateFrom/dateTo)
-- [ ] `GET /api/dashboard/stats` — агрегированная статистика
-- [ ] `GET /api/dashboard/recent?limit=20` — последние N транзакций
-- [ ] WebSocket `/ws/transactions` — эндпоинт доступен
-
-### Web Dashboard
-
-- [ ] Таблица последних транзакций (REST)
-- [ ] WebSocket-подключение, real-time обновление таблицы
-- [ ] KPI-карточки с реальными данными
+- [ ] Разобраны ТЗ [`tz/04-authorization.md`](../tz/04-authorization.md) и [`tz/05-card-management.md`](../tz/05-card-management.md)
+- [ ] Определены классы эквивалентности для статусов карт (ACTIVE/INACTIVE/BLOCKED/EXPIRED)
+- [ ] Определены граничные значения для dailyLimit/monthlyLimit и суммы транзакции
+- [ ] Построена decision table (успех + все decline-причины)
+- [ ] Оформлены баг-репорты с шагами воспроизведения, ожидаемым и фактическим результатом
+- [ ] Тест-кейсы привязаны к требованиям (прослеживаемость)
+- [ ] Артефакт размещён по пути сдачи (см. [`submission-guide.md`](submission-guide.md))
 
 ---
 
-## Ревью №3 — День 15 (Стабилизация и Code Freeze)
+## Артефакт 3 — Unit-тесты на JUnit 5
 
-### Все сервисы
-
-- [ ] `scripts/smoke-test.sh` проходит без ошибок
-- [ ] 500+ транзакций проходят через систему (любой симулятор)
-- [ ] Все decline-коды покрыты тестовыми сценариями
-- [ ] CI/CD зелёный по всем сервисам
-- [ ] Unit-тестов: минимум 3 на сервис
-
-### Gateway
-
-- [ ] Rate limiting: 100 запросов/сек — при превышении HTTP 429
-- [ ] Логирование: каждый запрос с method, path, status, responseTime
-
-### Switch
-
-- [ ] Retry при недоступности Authorization (3 попытки)
-- [ ] Circuit breaker (бонус)
-
-### Authorization
-
-- [ ] Резервирование средств корректно обновляет availableBalance в CMS
-- [ ] Все decline-коды возвращают правильный responseCode и declineReason
-
-### Симуляторы (Terminal + Merchant)
-
-- [ ] Все 5 сценариев Terminal Simulator работают
-- [ ] Все 4 сценария Merchant Simulator работают
-- [ ] Параллельная отправка транзакций
-
-### Transaction Logger
-
-- [ ] WebSocket: сообщения доходят до Dashboard в реальном времени
-- [ ] Пагинация (limit/offset) работает
-- [ ] Фильтрация по всем параметрам (AND-логика)
-
-### Web Dashboard
-
-- [ ] Линейный график потока транзакций (обновляется в реальном времени)
-- [ ] Круговая диаграмма Approved vs Declined
-- [ ] Фильтры: по статусу, дате, BIN, MCC
-- [ ] Модальное окно с деталями транзакции
-- [ ] Автореконнект WebSocket с exponential backoff
-- [ ] PAN маскируется (первые 4 + последние 4 цифры)
-- [ ] Индикатор состояния WebSocket-соединения
+- [ ] Покрыты целевые классы бизнес-логики (Gateway, Switch, Authorization, Card Management)
+- [ ] Используются assertions (проверяются значения, а не только «не упало»)
+- [ ] Используются Mockito test doubles для изоляции зависимостей
+- [ ] Покрыты ветвления (`if`/`else`, границы лимитов и статусов)
+- [ ] Применены параметризованные тесты для классов эквивалентности
+- [ ] Тесты проходят локально (`mvn test`)
+- [ ] CI зелёный по сервисам с тестами
 
 ---
 
-## Перед финальной защитой — День 19 (Сухая защита)
+## Артефакт 4 — API и интеграционные тесты
 
-### Все сервисы
+- [ ] Покрыты все endpoint'ы целевых сервисов (позитивные + негативные)
+- [ ] Проверены все decline-коды (responseCode + declineReason)
+- [ ] Тесты с БД используют контейнеризованную PostgreSQL
+- [ ] Проверена цепочка сервисов (сквозной проход транзакции)
+- [ ] Тесты проходят локально и в CI
 
-- [ ] `scripts/smoke-test.sh` проходит без ошибок
-- [ ] README каждого сервиса заполнен и актуален
-- [ ] Общий README репозитория актуален
-- [ ] Скриншоты Dashboard сохранены
-- [ ] Диаграммы архитектуры актуальны
-- [ ] Презентация готова (демо-сценарий, слайды)
-- [ ] Репетиция демо-сценария пройдена
+---
 
-### Демо-сценарий (рекомендация)
+## Артефакт 5 — E2E бизнес-сценарии
 
-1. `docker compose up -d` — система стартует (10 сек)
-2. `POST /api/cards/generate {count: 100}` — генерация тестовых карт
-3. `POST /api/simulator/terminal/run {count: 100, scenario: "mixed"}` — запуск симуляции
-4. Dashboard в реальном времени: таблица обновляется, графики двигаются
-5. Показать детали одной транзакции (модальное окно)
-6. Показать поиск с фильтрацией
-7. Показать decline-сценарий (`declines_test`)
+- [ ] Реализованы сценарии: покупка, возврат, declined-кейсы
+- [ ] Каждый сценарий проверяет полную цепочку сервисов
+- [ ] Используются синтетические тестовые данные
+- [ ] E2E-набор стабилен (нет flaky-тестов без объяснения)
+- [ ] Отчёт оформлен (см. [`skill-2-e2e-report`](../../materials/llm/skills/skill-2-e2e-report.md))
+
+---
+
+## Артефакт 6 — CI/CD и нагрузочный smoke
+
+- [ ] CI-пайплайн зелёный (сборка → тесты → отчёты)
+- [ ] Настроены quality gates
+- [ ] Локально выполнен нагрузочный прогон 500+ транзакций
+- [ ] Собраны метрики (p50/p95/p99, throughput, error rate)
+- [ ] Test summary report оформлен (см. [`skill-3-test-summary`](../../materials/llm/skills/skill-3-test-summary.md))
+
+---
+
+## Артефакт 7 — Отчётность и метрики
+
+- [ ] Allure-отчёт сгенерирован и доступен
+- [ ] Прослежены coverage trends
+- [ ] Метрики покрытия собраны и проинтерпретированы
+- [ ] Сделаны выводы о качестве (что покрыто, что осталось под риском)
+
+---
+
+## Артефакт 8 — Финальная тестовая стратегия
+
+- [ ] Составлена coverage map (что протестировано по уровням пирамиды)
+- [ ] Выделено ≥ 5 рисков с приоритизацией
+- [ ] Описан план тестирования (уровни, инструменты, критерии выхода)
+- [ ] Подготовлена защита (5–7 слайдов + ответы на вопросы)

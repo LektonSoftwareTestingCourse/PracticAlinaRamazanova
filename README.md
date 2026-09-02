@@ -1,188 +1,143 @@
 # СМП — Симулятор процессингового центра
 
-**Образовательный проект для студенческой практики**
+**Образовательный проект курса «Тестирование ПО» (ИТМО / Lekton)**
 
 ---
 
 ## Концепция
 
-`СМП` (Система медленных платежей) — это упрощённый симулятор процессингового центра на микросервисной архитектуре. Проект эмулирует путь банковской транзакции от POS-терминала до авторизации на стороне эмитента и обратно — внутри замкнутой системы «своих» карт.
+`СМП` — это **Симулятор процессингового центра**: упрощённая модель реального процессинга на микросервисной архитектуре. Проект эмулирует путь банковской транзакции от POS-терминала до авторизации на стороне эмитента и обратно — внутри замкнутой системы «своих» карт.
 
-**Ключевые ограничения:**
-- Только открытые технологии и фреймворки
-- Нет доступа к реальным банковским API, платёжным сетям и внутренним системам компаний
-- Все данные — синтетические (сгенерированные)
-- ISO 8583 эмулируется упрощённым JSON-форматом
-- Обрабатываются только «наши» тестовые карты из Card Management
-- Взаимодействие между сервисами — гибридное: синхронное HTTP + асинхронный RabbitMQ
-- Инфраструктура: PostgreSQL + RabbitMQ (message broker)
+> Легенда-шутка: расшифровку «Система медленных платежей» мы упоминаем один раз как внутреннюю шутку команды — официально СМП означает «Симулятор процессингового центра».
 
----
+**Ключевые особенности объекта тестирования:**
 
-## Команда (15 человек)
+- 11 микросервисов + PostgreSQL + RabbitMQ;
+- гибридное взаимодействие: синхронный HTTP (авторизация, резервирование) + асинхронный RabbitMQ (логирование, уведомления);
+- eventual consistency — запись в лог происходит не мгновенно, а после доставки через очередь;
+- изоляция через API и очереди, а не через прямые обращения к чужой БД;
+- только «свои» тестовые карты (никаких внешних BIN);
+- все данные синтетические, ISO 8583 эмулируется упрощённым JSON;
+- **все тесты удалены** — вы пишете их заново в течение семестра.
 
-| # | Роль | Чел. |
-|---|------|:---:|
-| 1 | DevOps | 1 |
-| 2 | Gateway Service | 2 |
-| 3 | Switch / Router | 2 |
-| 4 | Authorization Service | 2 |
-| 5 | Card Management Service | 2 |
-| 6 | Terminal Simulator | 1 |
-| 7 | Merchant + Acquirer Simulator | 1 |
-| 8 | Transaction Logger | 2 |
-| 9 | Web Dashboard | 2 |
-
-Команда разделена на 3 рабочие группы по 5 студентов. Transaction Logger расщеплён между группами: один человек отвечает за приём транзакций от Switch (в группе Core), второй — за поиск, статистику и WebSocket (в группе Data).
+Архитектура и модель данных описаны в [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
-## Технологический стек
-
-| Слой | Технологии |
-|------|-----------|
-| Языки | Java 21, Go 1.22, Python 3.12, TypeScript 5.x |
-| Фреймворки | Spring Boot 3, FastAPI, React 18 |
-| База данных | PostgreSQL 16 |
-| Message Broker | RabbitMQ 3.13 |
-| Инфраструктура | Docker, Docker Compose |
-| CI/CD | GitHub Actions |
-| API-документация | OpenAPI 3.0 (Swagger) |
-
-Каждая команда выбирает язык и фреймворк самостоятельно в рамках утверждённого стека.
-
----
-
-## Быстрый старт (для студентов)
-
-> 📖 **Подробная инструкция по работе с Git:** см. [`docs/git-workflow.md`](docs/git-workflow.md)
+## Быстрый старт
 
 ```bash
 # 1. Клонировать репозиторий
 git clone https://github.com/LektonSoftwareTestingCourse/Practic.git
-cd processing-practice
+cd Practic
 
-# 2. Запустить все сервисы (11 сервисов + PostgreSQL + RabbitMQ)
+# 2. Скопировать .env (переменные окружения уже настроены на нужные порты)
+cp .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
+
+# 3. Запустить все сервисы (11 сервисов + PostgreSQL + RabbitMQ)
 docker compose up -d
 
-# 3. Проверить, что всё работает
+# 4. Проверить, что всё работает
 curl http://localhost:8080/health
 
-# 4. RabbitMQ Management UI доступен на http://localhost:15672 (логин smp/smp)
+# 5. RabbitMQ Management UI: http://localhost:15672 (логин smp / пароль smp)
 
-# 5. Проверить bin-lookup API (порт 8096)
-curl http://localhost:8096/api/bin/400000
-
-# 6. Проверить notification-service API (порт 8097)
-curl http://localhost:8097/api/notifications
-
-# 7. Сгенерировать тестовые карты (через Gateway)
+# 6. Сгенерировать тестовые карты (через Gateway)
 curl -X POST http://localhost:8080/api/cards/generate \
   -H "Content-Type: application/json" \
   -d '{"count": 100, "bins": ["400000","400001","400002","400003","400004"]}'
 
-# 8. Запустить симулятор терминалов (50 транзакций, через Gateway)
+# 7. Запустить симулятор терминалов (50 транзакций, через Gateway)
 curl -X POST http://localhost:8080/api/simulator/terminal/run \
   -H "Content-Type: application/json" \
   -d '{"count": 50, "scenario": "normal"}'
 
-# 9. Открыть дашборд
-# http://localhost:3000
+# 8. Открыть дашборд: http://localhost:3000
 ```
 
-## Быстрая проверка для куратора (одной командой)
+**Профиль мониторинга (`observability`):** Prometheus, Grafana, Loki, Promtail и autoscaler вынесены в отдельный compose-профиль и **по умолчанию выключены**. Базовый запуск `docker compose up -d` поднимает только 11 сервисов + PostgreSQL + RabbitMQ. Полный стек с мониторингом (понадобится в модуле 8):
+
+```bash
+docker compose --profile observability up -d
+```
+
+**Быстрая проверка одной командой:**
 
 ```bash
 docker compose up -d && sleep 10 && ./scripts/smoke-test.sh
 ```
 
-Если вывод заканчивается строкой `🎉 ALL CHECKS PASSED` — все 11 сервисов работают, сквозной прогон транзакций успешен, система полностью готова к ревью.
+Вывод должен заканчиваться строкой `🎉 ALL CHECKS PASSED`.
 
+> 📖 Подробная инструкция по Git-воркфлоу и сдаче артефактов — [`docs/submission-guide.md`](docs/submission-guide.md).
+
+---
+
+## Карта сервисов и портов
+
+| Сервис | Порт | Назначение |
+|--------|:---:|---|
+| Gateway Service | 8080 | Единая точка входа REST API |
+| Card Management | 8081 | Управление картами, генерация тестовых данных |
+| Switch / Router | 8082 | Маршрутизация транзакций по BIN |
+| Authorization | 8083 | Решение APPROVED/DECLINED, проверка лимитов |
+| Terminal Simulator | 8085 | Эмулятор POS-терминалов |
+| Merchant Simulator | 8084 | Эмулятор мерчантов + эквайрера |
+| Transaction Logger | 8088 | Логирование транзакций + WebSocket |
+| Bin Lookup | 8096 | Внешний API обогащения по BIN |
+| Notification Service | 8097 | Уведомления о карточных событиях |
+| Web Dashboard | 3000 | React SPA, визуализация |
+| PostgreSQL | 5432 | БД (одна, но подключаются только 4 сервиса) |
+| RabbitMQ (AMQP) | 5672 | Асинхронный брокер |
+| RabbitMQ (Management UI) | 15672 | Веб-консоль очередей |
+
+---
+
+## Что тестируем по модулям 1–8
+
+Каждый модуль добавляет свой уровень тестирования к одному и тому же объекту — СМП.
+
+| Модуль | Что тестируем | Ключевые материалы |
+|:---:|---|---|
+| 1. Введение | Запуск СМП, health-check'и, smoke-проверки | [`docs/architecture.md`](docs/architecture.md), [`scripts/smoke-test.sh`](scripts/smoke-test.sh) |
+| 2. Тест-дизайн | Классы эквивалентности, границы, decision table по требованиям | [`tz/04-authorization.md`](tz/04-authorization.md), [`tz/05-card-management.md`](tz/05-card-management.md) |
+| 3. Пирамида + CI/CD | Уровни тестов, GitHub Actions, quality gates | [`docs/api-spec.md`](docs/api-spec.md), [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+| 4. Unit-тесты | JUnit 5, Mockito, покрытие бизнес-логики | [`services/`](services/), [`tz/02-gateway.md`](tz/02-gateway.md), [`tz/03-switch.md`](tz/03-switch.md) |
+| 5. API-тесты | REST-контракты, статус-коды, decline-коды | [`docs/api-spec.md`](docs/api-spec.md), [`tz/02-gateway.md`](tz/02-gateway.md) |
+| 6. Интеграционные тесты | БД в контейнерах, RabbitMQ, внешние сервисы | [`tz/04-authorization.md`](tz/04-authorization.md), [`tz/08-transaction-logger.md`](tz/08-transaction-logger.md) |
+| 7. E2E | Сквозные бизнес-сценарии покупки/возврата/decline | [`docs/e2e-test-plan.md`](docs/e2e-test-plan.md) |
+| 8. CI/CD + стратегия | Финальный пайплайн, Allure, coverage map | [`docs/submission-guide.md`](docs/submission-guide.md) |
+
+Полный список технических заданий: [`tz/`](tz/). Сдача и проверка — [`docs/submission-guide.md`](docs/submission-guide.md).
 
 ---
 
 ## Структура репозитория
 
 ```text
-processing-practice/
-├── README.md
-├── .pre-commit-config.yaml         # Pre-commit хуки (линтеры)
-├── docker-compose.yml              # DevOps (создаётся в процессе)
+Practic/
+├── README.md                        # этот документ
+├── docker-compose.yaml              # оркестрация всех сервисов
+├── .env.example                     # шаблон переменных окружения (порты)
 ├── docs/
-│   ├── architecture.md             # Архитектура и диаграммы
-│   ├── api-spec.md                 # API-контракт (OpenAPI 3.0)
-│   ├── program-overview.md         # Программа практики
-│   ├── evaluation-criteria.md      # Критерии оценки
-│   ├── checklists.md               # Чек-листы само-приёмки
-│   ├── git-workflow.md             # Инструкция по работе с Git
-│   └── readme-template.md          # Шаблон README для сервиса
+│   ├── architecture.md              # архитектура, модель данных, порты
+│   ├── api-spec.md                  # OpenAPI-контракты
+│   ├── e2e-test-plan.md             # E2E-сценарии и матрицы покрытия
+│   ├── submission-guide.md          # как сдавать артефакты
+│   └── checklists.md                # чек-листы само-приёмки
+├── tz/                              # технические задания (9 ролей)
+├── services/                        # исходный код 11 сервисов (без тестов)
 ├── scripts/
-│   ├── smoke-test.sh               # Авто-приёмка (Linux/Mac)
-│   └── smoke-test.ps1              # Авто-приёмка (Windows)
-├── starters/                       # Starter kits (готовые скелеты)
-│   ├── java/
-│   ├── go/
-│   ├── python/
-│   └── typescript/
-├── tz/                             # Технические задания по ролям
-│   ├── 01-devops.md
-│   ├── 02-gateway.md
-│   ├── 03-switch.md
-│   ├── 04-authorization.md
-│   ├── 05-card-management.md
-│   ├── 06-terminal-simulator.md
-│   ├── 07-merchant-acquirer.md
-│   ├── 08-transaction-logger.md
-│   └── 09-web-dashboard.md
-└── services/                       # ← Создаётся студентами в процессе
-    ├── gateway/                    #    (скопировать из starters/)
-    ├── switch/
-    ├── authorization/
-    ├── card-management/
-    ├── terminal-simulator/
-    ├── merchant-acquirer/
-    ├── transaction-logger/
-    ├── bin-lookup/                 #    Внешний API BIN (вариант B)
-    ├── notification-service/       #    Уведомления о картах (вариант C)
-    └── dashboard/
+│   ├── smoke-test.sh                # авто-приёмка (Linux/Mac)
+│   └── smoke-test.ps1               # авто-приёмка (Windows)
+├── starters/                        # starter kits (Java/Go/Python/TypeScript)
+└── infra/                           # prometheus, grafana, loki, promtail
 ```
-
-> **Внимание:** директория `services/` отсутствует в starter-репозитории — она создаётся студентами в процессе работы. Каждая команда копирует нужный starter kit из `starters/{язык}/` в `services/{свой-сервис}/`.
-
-**Starter kits** содержат готовый health-check, Dockerfile, unit-тест и структуру папок. Скопируй нужный язык в `services/{твой-сервис}/` и начинай с работающего кода.
-
-**Pre-commit хуки** (`pip install pre-commit && pre-commit install`) автоматически проверяют стиль кода при каждом коммите.
-
-**Smoke-test** (`./scripts/smoke-test.sh`) — куратор и студенты проверяют систему одной командой.
-
-Каждая директория в `services/` содержит:
-- `src/` — исходный код
-- `Dockerfile` — сборка контейнера
-- `README.md` — документация сервиса (см. [шаблон](docs/readme-template.md))
-
----
-
-## План практики (4 недели)
-
-| Неделя | Тема | Ключевой результат |
-|:---:|---|---|
-| 1 | Фундамент и проектирование | Docker Compose запущен, все сервисы отвечают на health-check, API-контракты зафиксированы, тестовые данные сгенерированы |
-| 2 | Первый сквозной прогон | Полный синхронный цикл транзакции: терминал → gateway → switch → authorization → card-management → logger. Кросс-командное ревью кода |
-| 3 | Стабилизация и Dashboard | Dashboard с real-time графиками, продвинутые сценарии симуляторов, 500+ транзакций. Code freeze |
-| 4 | Качество и защита | Рефакторинг, unit-тесты, документация, сухая защита, финальная презентация |
-
----
-
-## Название проекта
-
-**СМП — Система медленных платежей**
-
-Название выбрано командой и зафиксировано куратором в первый день практики.
 
 ---
 
 ## Контакты
 
-**Куратор практики:** [Имя Фамилия]
-**Telegram-чат группы:** [ссылка]
-**Репозиторий:** [GitHub URL]
+**Куратор практики:** Андрей Попов (Lekton)
+**Репозиторий:** https://github.com/LektonSoftwareTestingCourse/Practic
