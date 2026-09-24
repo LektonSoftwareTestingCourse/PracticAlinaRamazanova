@@ -1,0 +1,13 @@
+card_status:       ACTIVE, INACTIVE, BLOCKED, EXPIRED
+expiry_state:      CURRENT, FUTURE, EXPIRED
+daily_limit:       BELOW, EQUAL, ABOVE
+monthly_limit:     BELOW, EQUAL, ABOVE
+balance:           BELOW, EQUAL, ABOVE
+bin_lookup:        AVAILABLE, UNAVAILABLE
+issuer_source:     BIN, SWITCH
+card_management:   AVAILABLE, UNAVAILABLE
+
+IF [bin_lookup] = "AVAILABLE" THEN [issuer_source] = "BIN";
+IF [bin_lookup] = "UNAVAILABLE" THEN [issuer_source] = "SWITCH";
+IF [card_management] = "UNAVAILABLE" THEN [bin_lookup] = "AVAILABLE";
+IF [card_status] = "EXPIRED" THEN [expiry_state] = "EXPIRED";

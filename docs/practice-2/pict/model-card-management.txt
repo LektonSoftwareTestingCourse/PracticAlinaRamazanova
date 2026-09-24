@@ -1,0 +1,14 @@
+operation:        CREATE, UPDATE, DELETE, GET
+card_status:      NEW, ACTIVE, BLOCKED, EXPIRED
+pan_check:        VALID, INVALID_LENGTH, INVALID_SYMBOLS
+expiry_check:     VALID, INVALID_FORMAT, EXPIRED
+owner_check:      KNOWN, UNKNOWN
+request_source:   API, ADMIN_PANEL, BATCH
+audit_mode:       ENABLED, DISABLED
+
+IF [operation] = "CREATE" THEN [card_status] = "NEW";
+IF [operation] = "DELETE" THEN [owner_check] = "KNOWN";
+IF [operation] = "UPDATE" THEN [pan_check] = "VALID";
+IF [operation] = "GET" THEN [audit_mode] = "ENABLED";
+IF [card_status] = "EXPIRED" THEN [expiry_check] = "EXPIRED";
+IF [request_source] = "BATCH" THEN [operation] <> "DELETE";
