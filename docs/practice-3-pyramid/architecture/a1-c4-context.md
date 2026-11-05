@@ -22,7 +22,7 @@ BIN["Внешний BIN Lookup API"]
 ### Чего не хватало в проекте и что улучшено
 
 Чего не хватало в проекте: отдельной C4-диаграммы уровня Context, которая показывает границы СМП, внешних акторов и протоколы их взаимодействия с системой.
-Что улучшено: создана диаграмма, на которой отображены четыре внешних участника: Terminal Simulator, Merchant + Acquirer Simulator, пользователь дашборда и внешний BIN Lookup. 
+Что улучшено: создана диаграмма, на которой отображены четыре внешних участника: Terminal Simulator, Merchant + Acquirer Simulator, пользователь дашборда и внешний BIN Lookup.
 Добавлены связи с системой и указаны протоколы взаимодействия. Это позволяет определить границы тестирования и понять, какие внешние системы нужно эмулировать или заглушать при E2E-тестировании.
 
 ### Подтверждение кодом (ссылки на классы/файлы)
@@ -40,5 +40,3 @@ BIN["Внешний BIN Lookup API"]
 | Запросы Dashboard к API | [useTransactions.ts](https://github.com/LektonSoftwareTestingCourse/Practic/blob/main/services/dashboard/src/hooks/useTransactions.ts) | Получение данных о транзакциях |
 | WebSocket Dashboard | [useWebSocket.ts](https://github.com/LektonSoftwareTestingCourse/Practic/blob/main/services/dashboard/src/hooks/useWebSocket.ts) | Получение обновлений через WebSocket |
 | Конфигурация сервисов | [docker-compose.yaml](https://github.com/LektonSoftwareTestingCourse/Practic/blob/main/docker-compose.yaml) | Состав сервисов, порты и внутренние URL |
-
-
